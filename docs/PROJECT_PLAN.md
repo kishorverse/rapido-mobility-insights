@@ -7,6 +7,8 @@
 
 ---
 
+> **Note on structure:** the module list below reflects the original plan. During the build, closely-related modules were consolidated so the package is easier to navigate: `schema.py` folded into `db.py`, `pipeline.py` into `train.py`, `explain.py` into `evaluate.py`, and `registry.py` into `serve.py`. The functions themselves are unchanged - see README section 15 for the final layout.
+
 ## 1. Data Profile (verified, not assumed)
 
 | File | Rows | Grain | Role |
@@ -85,11 +87,11 @@ Project_3/
 │   ├── _helpers.py  overview.py  demand.py  cancellations.py
 │   ├── fares.py  customers.py  drivers.py  model_lab.py  predict.py
 ├── scripts/
-│   ├── profile_raw.py  run_etl.py  train_all.py  make_insights.py
+│   ├── manage.py  reports.py  build_notebook.py
 ├── notebooks/  01_eda.ipynb
 ├── models/                       # .joblib artefacts + metrics.json (gitignored)
 ├── data/  raw/  processed/       # parquet cache
-├── tests/   test_cleaning.py  test_features.py  test_dataset.py  test_queries.py
+├── tests/   test_data.py  test_dataset.py  test_models.py  test_queries.py
 └── docs/  PROJECT_PLAN.md  INSIGHTS.md  data_quality_report.md
 ```
 
@@ -238,7 +240,7 @@ encode_categoricals(df, cols, method='onehot') -> (df, encoder)
 build_feature_table(clean: dict) -> pd.DataFrame  # master orchestrator
 ```
 
-### `rapido/schema.py`
+### `rapido/db.py` (schema + access)
 ```python
 CREATE_TABLE_STATEMENTS: list[str]
 INDEX_STATEMENTS: list[str]
@@ -349,7 +351,7 @@ get_feature_types(X) -> (numeric_cols, categorical_cols)
 resample_balanced(X, y, method='smote') -> (X, y)
 ```
 
-### `rapido/models/pipeline.py`
+### `rapido/models/train.py` (pipeline + training)
 ```python
 build_preprocessor(numeric_cols, categorical_cols) -> ColumnTransformer
 build_classifier(name, **params) -> Pipeline    # logreg | rf | hgb | dummy
@@ -381,7 +383,7 @@ compare_models(results: dict) -> pd.DataFrame
 within_tolerance_rate(y_true, y_pred, tol=0.10) -> float   # the spec's +/-10% benchmark
 ```
 
-### `rapido/models/explain.py`
+### `rapido/models/evaluate.py` (importance)
 ```python
 get_feature_names(pipeline) -> list[str]
 tree_feature_importance(pipeline) -> pd.DataFrame
@@ -389,7 +391,7 @@ permutation_feature_importance(pipeline, X, y, task) -> pd.DataFrame
 top_drivers_for_prediction(pipeline, row) -> pd.DataFrame   # single-row reasons
 ```
 
-### `rapido/models/registry.py`
+### `rapido/models/serve.py` (persistence)
 ```python
 save_model(pipeline, name, metrics, metadata) -> Path
 load_model(name) -> (pipeline, metadata)
@@ -433,16 +435,16 @@ predict_driver_risk_form() -> None
 
 ### `scripts/`
 ```python
-profile_raw.py    main()   # -> docs/data_quality_report.md
-run_etl.py        main()   # argparse --rebuild --verify
-train_all.py      main()   # argparse --model {all,outcome,fare,customer,driver} --tune
-make_insights.py  main()   # -> docs/INSIGHTS.md from queries + metrics
+reports.py        main()   # quality|insights|both -> docs/*.md
+manage.py etl     main()   # --rebuild --verify-only --no-cache
+manage.py train   main()   # --model {all,outcome,fare,customer_risk,driver_risk} --tune --search
+
 ```
 
 ### `tests/`
 ```python
-test_cleaning.py   # datetime parsing, outcome-null preservation, FK integrity
-test_features.py   # rush-hour flag, city_pair, leave-one-out history correctness
+test_data.py       # loading, cleaning and feature engineering in one pipeline suite
+
 test_dataset.py    # assert_no_leakage raises on every blocked column
 test_queries.py    # each query returns non-empty with the expected columns
 test_models.py     # trained model beats baseline; artefact round-trips
@@ -454,7 +456,7 @@ test_models.py     # trained model beats baseline; artefact round-trips
 
 | Day | Deliverable | Definition of done |
 |---|---|---|
-| 1 | `config.py`, `io.py`, `profile_raw.py` | **DONE** - report written, 13 tests green |
+| 1 | `config.py`, `io.py`, `reports.py` | **DONE** - report written, 13 tests green |
 | 2 | `cleaning.py` + tests | **DONE** - 0 rows lost, structural nulls preserved |
 | 3 | `schema.py`, `db.py`, `etl.py` | **DONE** - 141,959 rows in MySQL, 7 indexes, all PASS |
 | 4 | `features.py` + tests | **DONE** - 76-column table cached; 38 tests green |

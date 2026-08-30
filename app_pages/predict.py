@@ -8,7 +8,7 @@ import streamlit as st
 import config
 from app_pages._helpers import format_currency, model_missing_notice, section
 from rapido import charts
-from rapido.models import registry, serve
+from rapido.models import serve
 
 st.title(":material/bolt: Live Prediction")
 st.caption(

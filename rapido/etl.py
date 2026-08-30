@@ -1,4 +1,4 @@
-"""Extract - Transform - Load pipeline into the normalised MySQL schema.
+"""Extract - Transform - Load pipeline into the normalised MySQL db.
 
 The transform step converts the flat CSV frames into the surrogate-keyed star
 schema declared in :mod:`rapido.schema`: text city, location and vehicle values
@@ -12,7 +12,7 @@ import logging
 import pandas as pd
 
 import config
-from rapido import cleaning, db, io, schema
+from rapido import cleaning, db, io
 
 logger = logging.getLogger(__name__)
 
@@ -151,7 +151,7 @@ def transform_bookings(
     frame["traffic_level"] = frame["traffic_level"].astype(str)
     frame["weather_condition"] = frame["weather_condition"].astype(str)
 
-    return frame[schema.get_insert_columns("bookings")]
+    return frame[db.get_insert_columns("bookings")]
 
 
 def transform_customers(
@@ -167,7 +167,7 @@ def transform_customers(
         frame["preferred_vehicle_type"].astype(str).map(vehicles)
     )
     frame["customer_gender"] = frame["customer_gender"].astype(str)
-    return frame[schema.get_insert_columns("customers")]
+    return frame[db.get_insert_columns("customers")]
 
 
 def transform_drivers(
@@ -180,7 +180,7 @@ def transform_drivers(
     frame = drivers.copy()
     frame["city_id"] = frame["driver_city"].astype(str).map(cities)
     frame["vehicle_type_id"] = frame["vehicle_type"].astype(str).map(vehicles)
-    return frame[schema.get_insert_columns("drivers")]
+    return frame[db.get_insert_columns("drivers")]
 
 
 def transform_location_demand(
@@ -200,7 +200,7 @@ def transform_location_demand(
         for city, code in zip(city_text, frame["pickup_location"].astype(str))
     ]
     frame["demand_level"] = frame["demand_level"].astype(str)
-    return frame[schema.get_insert_columns("location_demand")]
+    return frame[db.get_insert_columns("location_demand")]
 
 
 def transform_time_features(time_features: pd.DataFrame) -> pd.DataFrame:
@@ -208,7 +208,7 @@ def transform_time_features(time_features: pd.DataFrame) -> pd.DataFrame:
     frame = time_features.rename(columns={"datetime": "slot_datetime"}).copy()
     frame["day_of_week"] = frame["day_of_week"].astype(str)
     frame["season"] = frame["season"].astype(str)
-    return frame[schema.get_insert_columns("time_features")]
+    return frame[db.get_insert_columns("time_features")]
 
 
 def transform(raw: dict[str, pd.DataFrame]) -> dict[str, pd.DataFrame]:
@@ -221,7 +221,7 @@ def transform(raw: dict[str, pd.DataFrame]) -> dict[str, pd.DataFrame]:
         "cities": dimensions["cities"],
         "vehicle_types": dimensions["vehicle_types"],
         "locations": dimensions["locations"][
-            schema.get_insert_columns("locations")
+            db.get_insert_columns("locations")
         ],
         "customers": transform_customers(cleaned["customers"], dimensions),
         "drivers": transform_drivers(cleaned["drivers"], dimensions),
@@ -256,7 +256,7 @@ def load(tables: dict[str, pd.DataFrame], rebuild: bool = False) -> dict[str, in
     db.create_tables()
 
     inserted = {}
-    for table in schema.TABLE_ORDER:
+    for table in db.TABLE_ORDER:
         if db.row_count(table) and not rebuild:
             logger.info("Skipping %s: already populated", table)
             inserted[table] = 0
@@ -270,7 +270,7 @@ def load(tables: dict[str, pd.DataFrame], rebuild: bool = False) -> dict[str, in
 def verify_load(tables: dict[str, pd.DataFrame]) -> pd.DataFrame:
     """Compare in-memory row counts against what actually landed in MySQL."""
     rows = []
-    for table in schema.TABLE_ORDER:
+    for table in db.TABLE_ORDER:
         expected = len(tables[table])
         actual = db.row_count(table) if db.table_exists(table) else 0
         rows.append(

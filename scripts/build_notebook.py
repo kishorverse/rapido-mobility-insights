@@ -358,7 +358,7 @@ print(f"Customers: {df['customer_id'].nunique():,}   Drivers: {df['driver_id'].n
 
 ### Next steps
 
-`scripts/train_all.py` trains the four models on this feature table; `app.py` serves
+`scripts/manage.py train` trains the four models on this feature table; `app.py` serves
 the dashboard and live predictions.""",
     ),
 ]

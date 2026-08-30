@@ -128,7 +128,7 @@ def load_processed(name: str) -> pd.DataFrame:
     if not source.exists():
         raise FileNotFoundError(
             f"No cached frame named {name!r} at {source}. "
-            "Run scripts/run_etl.py first."
+            "Run scripts/manage.py etl first."
         )
     return pd.read_parquet(source)
 

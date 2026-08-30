@@ -7,14 +7,14 @@ import pandas as pd
 import pytest
 
 import config
-from rapido.models import evaluate, registry, serve
+from rapido.models import evaluate, serve
 
 MODELS_TRAINED = all(
-    registry.model_exists(name) for name in config.MODEL_NAMES.values()
+    serve.model_exists(name) for name in config.MODEL_NAMES.values()
 )
 
 needs_models = pytest.mark.skipif(
-    not MODELS_TRAINED, reason="Models not trained; run scripts/train_all.py"
+    not MODELS_TRAINED, reason="Models not trained; run scripts/manage.py train"
 )
 
 
@@ -81,7 +81,7 @@ def test_threshold_table_monotonic_recall():
 @pytest.mark.parametrize("key", list(config.MODEL_NAMES))
 def test_model_round_trips(key):
     """Every artefact loads back with its metrics and metadata intact."""
-    pipeline, metadata = registry.load_model(config.MODEL_NAMES[key])
+    pipeline, metadata = serve.load_model(config.MODEL_NAMES[key])
     assert hasattr(pipeline, "predict")
     assert metadata["metrics"]
     assert metadata["algorithm"]
@@ -89,14 +89,14 @@ def test_model_round_trips(key):
 
 def test_missing_model_raises_helpful_error():
     """Loading an unknown model explains how to produce it."""
-    with pytest.raises(FileNotFoundError, match="train_all"):
-        registry.load_model("no_such_model")
+    with pytest.raises(FileNotFoundError, match="manage.py train"):
+        serve.load_model("no_such_model")
 
 
 @needs_models
 def test_list_models_covers_all_four():
     """The registry lists every trained artefact."""
-    listed = registry.list_models()
+    listed = serve.list_models()
     assert len(listed) >= 4
 
 
@@ -109,7 +109,7 @@ def test_list_models_covers_all_four():
 def test_models_beat_their_baselines():
     """Each model outperforms the dummy baseline recorded at training time."""
     for key in ("outcome", "customer_risk", "driver_risk"):
-        _, metadata = registry.load_model(config.MODEL_NAMES[key])
+        _, metadata = serve.load_model(config.MODEL_NAMES[key])
         leaderboard = pd.DataFrame(metadata["leaderboard"])
         best = leaderboard.loc[leaderboard["model"] != "dummy", "f1_macro"].max()
         baseline = leaderboard.loc[leaderboard["model"] == "dummy", "f1_macro"].iloc[0]
@@ -119,7 +119,7 @@ def test_models_beat_their_baselines():
 @needs_models
 def test_fare_model_meets_project_benchmark():
     """The fare model satisfies the brief's ±10% tolerance target."""
-    _, metadata = registry.load_model(config.MODEL_NAMES["fare"])
+    _, metadata = serve.load_model(config.MODEL_NAMES["fare"])
     metrics = metadata["metrics"]
     assert metrics["within_10_pct"] > 0.90
     assert metrics["r2"] > 0.90
@@ -128,7 +128,7 @@ def test_fare_model_meets_project_benchmark():
 @needs_models
 def test_fare_model_respects_noise_floor():
     """MAPE cannot beat the 2.5% floor set by the ±5% uniform noise term."""
-    _, metadata = registry.load_model(config.MODEL_NAMES["fare"])
+    _, metadata = serve.load_model(config.MODEL_NAMES["fare"])
     assert metadata["metrics"]["mape_pct"] >= 2.4, (
         "MAPE below the theoretical noise floor implies leakage"
     )
@@ -138,7 +138,7 @@ def test_fare_model_respects_noise_floor():
 def test_risk_models_discriminate():
     """Both risk models score meaningfully better than random."""
     for key in ("customer_risk", "driver_risk"):
-        _, metadata = registry.load_model(config.MODEL_NAMES[key])
+        _, metadata = serve.load_model(config.MODEL_NAMES[key])
         assert metadata["metrics"]["roc_auc"] > 0.65
 
 
@@ -167,7 +167,7 @@ def test_feature_row_matches_training_columns():
     inputs = {"ride_distance_km": 10.0, "vehicle_type": "Cab", "city": "Mumbai"}
     for key in config.MODEL_NAMES:
         row = serve.build_feature_row(inputs, key)
-        _, metadata = registry.load_model(config.MODEL_NAMES[key])
+        _, metadata = serve.load_model(config.MODEL_NAMES[key])
         assert set(row.columns) == set(metadata["features"])
         assert len(row) == 1
 

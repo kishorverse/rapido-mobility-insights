@@ -1,22 +1,185 @@
-"""Training entry points for the four Rapido models.
+"""Model construction and training.
 
-Every model follows the same protocol: build a leakage-checked dataset, split
-80/20 stratified, score a baseline, compare candidate estimators, tune the
-winner, evaluate on the held-out test set, then persist.
+Preprocessing lives inside the sklearn Pipeline rather than being applied to the
+frame beforehand, so every fold of cross-validation re-fits the imputer, scaler
+and encoder on training data only. That is what keeps the CV scores honest.
+
+Every model follows the same protocol: build the matrices, split 80/20 stratified,
+score a baseline, compare candidate estimators, tune the winner, then persist it
+with its metrics and metadata.
 """
 
 from __future__ import annotations
 
+from __future__ import annotations
 import logging
 import time
 
+from sklearn.compose import ColumnTransformer
+from sklearn.dummy import DummyClassifier, DummyRegressor
+from sklearn.ensemble import (
+    HistGradientBoostingClassifier,
+    HistGradientBoostingRegressor,
+    RandomForestClassifier,
+    RandomForestRegressor,
+)
+from sklearn.impute import SimpleImputer
+from sklearn.linear_model import LogisticRegression, Ridge
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
 from sklearn.utils.class_weight import compute_sample_weight
 
 import config
-from rapido.models import dataset, evaluate, explain, pipeline as pipe, registry
+from rapido.models import dataset, evaluate, serve
+
+
+def build_preprocessor(
+    numeric_columns: list[str], categorical_columns: list[str], scale: bool = True
+) -> ColumnTransformer:
+    """Build the shared preprocessing transformer.
+
+    Numeric columns are median-imputed (the prior-history rates are NaN for an
+    entity's first ride, which is meaningful rather than missing-at-random) and
+    optionally scaled. Categorical columns are most-frequent imputed and
+    one-hot encoded, ignoring unseen categories at predict time.
+    """
+    numeric_steps = [("impute", SimpleImputer(strategy="median"))]
+    if scale:
+        numeric_steps.append(("scale", StandardScaler()))
+
+    categorical_steps = [
+        ("impute", SimpleImputer(strategy="most_frequent")),
+        ("encode", OneHotEncoder(handle_unknown="ignore", sparse_output=False)),
+    ]
+
+    return ColumnTransformer(
+        transformers=[
+            ("numeric", Pipeline(numeric_steps), numeric_columns),
+            ("categorical", Pipeline(categorical_steps), categorical_columns),
+        ],
+        remainder="drop",
+        verbose_feature_names_out=False,
+    )
+
+
+def _classifier(name: str, class_weight: str | None, **params):
+    """Instantiate a classifier by short name."""
+    seed = config.RANDOM_STATE
+    if name == "dummy":
+        return DummyClassifier(strategy="most_frequent")
+    if name == "logreg":
+        return LogisticRegression(
+            max_iter=2000, class_weight=class_weight, random_state=seed, **params
+        )
+    if name == "random_forest":
+        return RandomForestClassifier(
+            n_estimators=params.pop("n_estimators", 300),
+            min_samples_leaf=params.pop("min_samples_leaf", 5),
+            n_jobs=-1,
+            class_weight=class_weight,
+            random_state=seed,
+            **params,
+        )
+    if name == "hist_gb":
+        # HistGradientBoosting has no class_weight before the fit call, so
+        # balancing is applied through sample weights in train.py.
+        return HistGradientBoostingClassifier(random_state=seed, **params)
+    raise ValueError(f"Unknown classifier {name!r}.")
+
+
+def _regressor(name: str, **params):
+    """Instantiate a regressor by short name."""
+    seed = config.RANDOM_STATE
+    if name == "dummy":
+        return DummyRegressor(strategy="mean")
+    if name == "ridge":
+        return Ridge(alpha=params.pop("alpha", 1.0), random_state=seed, **params)
+    if name == "random_forest":
+        return RandomForestRegressor(
+            n_estimators=params.pop("n_estimators", 200),
+            min_samples_leaf=params.pop("min_samples_leaf", 5),
+            n_jobs=-1,
+            random_state=seed,
+            **params,
+        )
+    if name == "hist_gb":
+        return HistGradientBoostingRegressor(random_state=seed, **params)
+    raise ValueError(f"Unknown regressor {name!r}.")
+
+
+def build_model(
+    name: str,
+    task: str,
+    numeric_columns: list[str],
+    categorical_columns: list[str],
+    class_weight: str | None = None,
+    **params,
+) -> Pipeline:
+    """Compose preprocessing and an estimator into one fitted-together pipeline.
+
+    Args:
+        name: Estimator short name.
+        task: ``"classification"`` or ``"regression"``.
+        numeric_columns: Numeric feature names.
+        categorical_columns: Categorical feature names.
+        class_weight: Passed to classifiers that support it.
+        **params: Extra estimator keyword arguments.
+    """
+    # Tree ensembles do not need scaling; skipping it keeps values interpretable.
+    scale = name in {"logreg", "ridge"}
+    preprocessor = build_preprocessor(numeric_columns, categorical_columns, scale=scale)
+
+    if task == "classification":
+        estimator = _classifier(name, class_weight, **params)
+    elif task == "regression":
+        estimator = _regressor(name, **params)
+    else:
+        raise ValueError(f"Unknown task {task!r}.")
+
+    return Pipeline([("preprocess", preprocessor), ("model", estimator)])
+
+
+#: Candidate estimators tried for each task, cheapest first.
+CANDIDATES = {
+    "classification": ["dummy", "logreg", "random_forest", "hist_gb"],
+    "regression": ["dummy", "ridge", "random_forest", "hist_gb"],
+}
+
+
+def get_param_grid(name: str, task: str) -> dict:
+    """Return the hyperparameter search space for an estimator.
+
+    Grids are deliberately small: the dataset has 100k rows, and a wide search
+    would cost hours for marginal gain.
+    """
+    grids = {
+        ("logreg", "classification"): {"model__C": [0.1, 1.0, 5.0]},
+        ("random_forest", "classification"): {
+            "model__n_estimators": [200, 400],
+            "model__max_depth": [None, 16],
+            "model__min_samples_leaf": [2, 10],
+        },
+        ("hist_gb", "classification"): {
+            "model__learning_rate": [0.05, 0.1],
+            "model__max_iter": [200, 400],
+            "model__max_leaf_nodes": [31, 63],
+        },
+        ("ridge", "regression"): {"model__alpha": [0.1, 1.0, 10.0]},
+        ("random_forest", "regression"): {
+            "model__n_estimators": [200, 400],
+            "model__min_samples_leaf": [2, 10],
+        },
+        ("hist_gb", "regression"): {
+            "model__learning_rate": [0.05, 0.1],
+            "model__max_iter": [200, 400],
+            "model__max_leaf_nodes": [31, 63],
+        },
+    }
+    return grids.get((name, task), {})
+
 
 logger = logging.getLogger(__name__)
 
@@ -62,13 +225,13 @@ def train_and_compare(
         The leaderboard and a mapping of estimator name to fitted pipeline.
     """
     numeric, categorical = dataset.get_feature_types(features_train)
-    names = candidates or pipe.CANDIDATES[task]
+    names = candidates or CANDIDATES[task]
     class_weight = "balanced" if balance else None
 
     results, fitted = {}, {}
     for name in names:
         started = time.perf_counter()
-        model = pipe.build_model(
+        model = build_model(
             name,
             task,
             numeric,
@@ -118,8 +281,8 @@ def tune_model(
             f"Unknown search_strategy {search_strategy!r}; use 'random' or 'grid'"
         )
     numeric, categorical = dataset.get_feature_types(features)
-    grid = pipe.get_param_grid(name, task)
-    base = pipe.build_model(
+    grid = get_param_grid(name, task)
+    base = build_model(
         name, task, numeric, categorical, class_weight="balanced" if balance else None
     )
     if not grid:
@@ -205,7 +368,7 @@ def _train_generic(
     baseline = leaderboard.loc[leaderboard["model"] == "dummy"].to_dict("records")
     cv = evaluate.cross_validate_model(best_model, x_train, y_train, task)
 
-    importance = explain.importance_for(best_model, x_test, y_test, task)
+    importance = evaluate.importance_for(best_model, x_test, y_test, task)
 
     extras: dict = {}
     if task == "classification":
@@ -218,7 +381,7 @@ def _train_generic(
             probabilities = best_model.predict_proba(x_test)
             extras["thresholds"] = evaluate.threshold_table(y_test, probabilities)
 
-    registry.save_model(
+    serve.save_model(
         best_model,
         model_name,
         metrics,
@@ -330,7 +493,7 @@ def train_fare_leakage_ablation(frame: pd.DataFrame) -> dict:
         features, target, stratify=False
     )
     numeric, categorical = dataset.get_feature_types(x_train)
-    model = pipe.build_model("hist_gb", "regression", numeric, categorical)
+    model = build_model("hist_gb", "regression", numeric, categorical)
     model.fit(x_train, y_train)
     metrics = evaluate.regression_metrics(y_test, model.predict(x_test))
     logger.info("  leakage ablation (with base_fare): %s", metrics)
@@ -354,6 +517,6 @@ def train_all_models(
         results[key] = trainer(frame, tune=tune, search_strategy=search_strategy)
 
     ablation = train_fare_leakage_ablation(frame)
-    registry.save_metrics("fare_leakage_ablation", ablation)
+    serve.save_metrics("fare_leakage_ablation", ablation)
     results["fare_leakage_ablation"] = ablation
     return results

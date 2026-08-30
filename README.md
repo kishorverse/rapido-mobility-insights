@@ -56,16 +56,16 @@ pip install -r requirements.txt
 cp .env.example .env        # then edit .env with your MySQL password
 
 # 3. Profile the raw data  ->  docs/data_quality_report.md
-python scripts/profile_raw.py
+python scripts/reports.py quality
 
 # 4. Build the warehouse (creates schema, loads 141,959 rows, builds indexes)
-python scripts/run_etl.py --rebuild
+python scripts/manage.py etl --rebuild
 
 # 5. Train the four models  ->  models/*.joblib
-python scripts/train_all.py
+python scripts/manage.py train
 
 # 6. Generate the findings report  ->  docs/INSIGHTS.md
-python scripts/make_insights.py
+python scripts/reports.py insights
 
 # 7. Launch the dashboard
 streamlit run app.py
@@ -91,9 +91,9 @@ All settings live in `config.py` and are overridable through environment variabl
 ### Other commands
 
 ```bash
-python scripts/run_etl.py --verify-only        # connectivity + row counts
-python scripts/train_all.py --model fare --tune # retrain one model with search
-python scripts/train_all.py --tune --search grid  # exhaustive GridSearchCV sweep
+python scripts/manage.py etl --verify-only        # connectivity + row counts
+python scripts/manage.py train --model fare --tune # retrain one model with search
+python scripts/manage.py train --tune --search grid  # exhaustive GridSearchCV sweep
 python scripts/build_notebook.py --execute      # regenerate the EDA notebook
 pytest tests -q                                 # run the test suite
 ```
@@ -106,7 +106,7 @@ pytest tests -q                                 # run the test suite
 Rapido_dataset/*.csv
         │
         ▼
-   rapido/io.py ──────────► scripts/profile_raw.py ──► docs/data_quality_report.md
+   rapido/io.py ──────────► scripts/reports.py quality ──► docs/data_quality_report.md
         │
         ▼
    rapido/cleaning.py          (validate, parse, preserve structural nulls)
@@ -115,13 +115,13 @@ Rapido_dataset/*.csv
         │                                              │
         ▼                                              ▼
    rapido/etl.py                              rapido/models/
-        │                                     ├── dataset.py   (leakage guard)
-        ▼                                     ├── pipeline.py  (preprocess + estimator)
-   MySQL: rapido_mobility                     ├── train.py     (4 entry points)
-   (8 tables, 3NF, 7 indexes)                 ├── evaluate.py  (metrics)
-        │                                     ├── explain.py   (importance)
-        ▼                                     ├── registry.py  (persistence)
-   rapido/queries.py  (30 named queries)      └── serve.py     (prediction)
+        │                                     ├── dataset.py   (matrices + leakage guard)
+        ▼                                     ├── train.py     (pipeline, fit, tune)
+   MySQL: rapido_mobility                     ├── evaluate.py  (metrics + importance)
+   (8 tables, 3NF, 7 indexes)                 └── serve.py     (persist + predict)
+        │
+        ▼
+   rapido/queries.py  (30 named queries)
         │                                              │
         └──────────────┬───────────────────────────────┘
                        ▼
@@ -325,7 +325,7 @@ the row being predicted — they are replaced, not used.
 **The proof:** `cust_prior_cancel_rate` has exactly **10,000 nulls** — one per
 customer's first-ever ride — and `drv_prior_cancel_rate` exactly **5,000**. If the
 current row were leaking in, those counts would be zero. Locked in by
-`tests/test_features.py`.
+`tests/test_data.py`.
 
 ---
 
@@ -440,9 +440,7 @@ pytest tests -q
 
 | File | Covers |
 |---|---|
-| `test_io.py` | loading, dtypes, uniqueness, referential integrity, the three leakage assumptions |
-| `test_cleaning.py` | datetime parsing, structural-null preservation, outliers, ranges, namespacing |
-| `test_features.py` | engineered flags, scores, and prior-history correctness on a hand-built fixture |
+| `test_data.py` | the data pipeline end to end: loading and dtypes, the three leakage assumptions, datetime parsing, structural-null preservation, ranges and namespacing, engineered flags, scores, and prior-history correctness |
 | `test_dataset.py` | the leakage guard, parameterised across every blocked column × every target |
 | `test_queries.py` | all 30 queries against live MySQL, parameterisation, SQL-injection safety, pagination |
 | `test_models.py` | metric maths, artefact round-trips, baseline comparison, benchmark and noise-floor assertions, serving behaviour |
@@ -498,23 +496,19 @@ Project_3/
 │   ├── io.py                   # loading and Parquet caching
 │   ├── cleaning.py             # validation and cleaning
 │   ├── features.py             # feature engineering
-│   ├── schema.py               # DDL and index definitions
-│   ├── db.py                   # MySQL access layer
+│   ├── db.py                   # DDL, index definitions and MySQL access
 │   ├── etl.py                  # extract-transform-load pipeline
 │   ├── queries.py              # 30 named parameterised queries
 │   ├── charts.py               # Plotly figure builders
 │   ├── stats.py                # significance testing
 │   └── models/
 │       ├── dataset.py          # feature matrices + leakage guard
-│       ├── pipeline.py         # preprocessing + estimators
-│       ├── train.py            # training entry points
-│       ├── evaluate.py         # metrics and diagnostics
-│       ├── explain.py          # feature importance
-│       ├── registry.py         # artefact persistence
-│       └── serve.py            # prediction serving
+│       ├── train.py            # preprocessing, estimators, fitting, tuning
+│       ├── evaluate.py         # metrics, diagnostics, feature importance
+│       └── serve.py            # artefact persistence + prediction serving
 │
 ├── app_pages/                  # 9 Streamlit pages (presentation only)
-├── scripts/                    # profile_raw · run_etl · train_all · make_insights · build_notebook
+├── scripts/                    # manage (etl · train) · reports (quality · insights) · build_notebook
 ├── tests/                      # 145 tests
 ├── notebooks/01_eda.ipynb      # executed EDA notebook
 ├── docs/

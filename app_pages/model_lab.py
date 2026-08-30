@@ -16,13 +16,13 @@ from app_pages._helpers import (
 )
 import config
 from rapido import charts
-from rapido.models import dataset, evaluate, registry
+from rapido.models import dataset, evaluate, serve
 
 st.title(":material/science: Model Lab")
 st.caption("How the four models were built, what they score, and what drives them.")
 
 metrics_store = cached_metrics()
-available = registry.list_models()
+available = serve.list_models()
 
 if available.empty:
     model_missing_notice("prediction")
@@ -87,7 +87,7 @@ tabs = st.tabs(list(MODEL_TABS))
 for tab, (label, (model_key, task)) in zip(tabs, MODEL_TABS.items()):
     with tab:
         artefact_name = config.MODEL_NAMES[model_key]
-        if not registry.model_exists(artefact_name):
+        if not serve.model_exists(artefact_name):
             model_missing_notice(label)
             continue
 

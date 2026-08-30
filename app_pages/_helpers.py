@@ -10,7 +10,7 @@ import pandas as pd
 import streamlit as st
 
 from rapido import queries
-from rapido.models import registry
+from rapido.models import serve
 
 CACHE_TTL = "10m"
 
@@ -55,13 +55,13 @@ def q(name: str, filters: dict | None = None, **kwargs) -> pd.DataFrame:
 @st.cache_resource(show_spinner=False)
 def cached_model(name: str):
     """Load a trained model once per session."""
-    return registry.load_model(name)
+    return serve.load_model(name)
 
 
 @st.cache_data(ttl="1h", show_spinner=False)
 def cached_metrics() -> dict:
     """Load the stored model metrics."""
-    return registry.load_metrics()
+    return serve.load_metrics()
 
 
 @st.cache_data(ttl="1h", show_spinner=False)
@@ -188,7 +188,7 @@ def model_missing_notice(name: str) -> None:
     """Explain how to produce a missing model artefact."""
     st.warning(
         f"The **{name}** model has not been trained yet. "
-        "Run `python scripts/train_all.py` from the project root.",
+        "Run `python scripts/manage.py train` from the project root.",
         icon=":material/model_training:",
     )
 

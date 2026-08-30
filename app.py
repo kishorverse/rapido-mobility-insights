@@ -44,7 +44,7 @@ def _connection_ok() -> tuple[bool, str]:
         if not status.get("connected"):
             return False, status.get("error", "Unknown connection error.")
         if not status["tables"].get("bookings"):
-            return False, "The bookings table is empty. Run scripts/run_etl.py."
+            return False, "The bookings table is empty. Run scripts/manage.py etl."
         return True, f"MySQL {status.get('server_version', '')}"
     except Exception as exc:  # pragma: no cover - surfaced in the UI
         return False, str(exc)
