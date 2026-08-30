@@ -121,7 +121,7 @@ Rapido_dataset/*.csv
    (8 tables, 3NF, 7 indexes)                 ├── evaluate.py  (metrics)
         │                                     ├── explain.py   (importance)
         ▼                                     ├── registry.py  (persistence)
-   rapido/queries.py  (29 named queries)      └── serve.py     (prediction)
+   rapido/queries.py  (30 named queries)      └── serve.py     (prediction)
         │                                              │
         └──────────────┬───────────────────────────────┘
                        ▼
@@ -436,7 +436,7 @@ the explorer pages in SQL rather than loading the full table.
 pytest tests -q
 ```
 
-**140 tests, all passing.**
+**145 tests, all passing.**
 
 | File | Covers |
 |---|---|
@@ -444,7 +444,7 @@ pytest tests -q
 | `test_cleaning.py` | datetime parsing, structural-null preservation, outliers, ranges, namespacing |
 | `test_features.py` | engineered flags, scores, and prior-history correctness on a hand-built fixture |
 | `test_dataset.py` | the leakage guard, parameterised across every blocked column × every target |
-| `test_queries.py` | all 29 queries against live MySQL, parameterisation, SQL-injection safety, pagination |
+| `test_queries.py` | all 30 queries against live MySQL, parameterisation, SQL-injection safety, pagination |
 | `test_models.py` | metric maths, artefact round-trips, baseline comparison, benchmark and noise-floor assertions, serving behaviour |
 
 Database-dependent tests skip automatically when MySQL is unreachable.
@@ -501,7 +501,7 @@ Project_3/
 │   ├── schema.py               # DDL and index definitions
 │   ├── db.py                   # MySQL access layer
 │   ├── etl.py                  # extract-transform-load pipeline
-│   ├── queries.py              # 29 named parameterised queries
+│   ├── queries.py              # 30 named parameterised queries
 │   ├── charts.py               # Plotly figure builders
 │   ├── stats.py                # significance testing
 │   └── models/
@@ -515,9 +515,10 @@ Project_3/
 │
 ├── app_pages/                  # 9 Streamlit pages (presentation only)
 ├── scripts/                    # profile_raw · run_etl · train_all · make_insights · build_notebook
-├── tests/                      # 140 tests
+├── tests/                      # 145 tests
 ├── notebooks/01_eda.ipynb      # executed EDA notebook
 ├── docs/
+│   ├── PROJECT_BRIEF.md        # the original project specification
 │   ├── PROJECT_PLAN.md         # build plan and function inventory
 │   ├── data_quality_report.md  # generated profiling report
 │   └── INSIGHTS.md             # generated findings report
