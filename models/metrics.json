@@ -1,0 +1,1005 @@
+{
+  "fare_prediction": {
+    "metrics": {
+      "rmse": 12.1527,
+      "mae": 8.9824,
+      "r2": 0.9966,
+      "mape_pct": 2.76,
+      "rmse_pct_of_mean": 3.592,
+      "within_10_pct": 0.9982,
+      "within_20_pct": 1.0
+    },
+    "algorithm": "hist_gb",
+    "task": "regression",
+    "target": "fare",
+    "description": "Pre-quote fare regression (base_fare excluded)",
+    "n_train": 80000,
+    "n_test": 20000,
+    "features": [
+      "ride_distance_km",
+      "estimated_ride_time_min",
+      "surge_multiplier",
+      "hour_of_day",
+      "day_of_month",
+      "month",
+      "week_of_year",
+      "is_weekend",
+      "rush_hour_flag",
+      "is_night_ride",
+      "long_distance_flag",
+      "is_same_zone",
+      "expected_speed_kmph",
+      "adverse_conditions_flag",
+      "bad_weather_flag",
+      "high_traffic_flag",
+      "peak_time_flag",
+      "zone_total_requests",
+      "zone_avg_wait_min",
+      "zone_avg_surge",
+      "surge_vs_zone_ratio",
+      "zone_demand_pressure",
+      "customer_age",
+      "customer_signup_days_ago",
+      "avg_customer_rating",
+      "customer_loyalty_score",
+      "driver_age",
+      "driver_experience_years",
+      "acceptance_rate",
+      "avg_driver_rating",
+      "avg_pickup_delay_min",
+      "driver_reliability_score",
+      "cust_prior_rides",
+      "cust_prior_cancelled",
+      "cust_prior_incomplete",
+      "cust_prior_cancel_rate",
+      "cust_prior_incomplete_rate",
+      "cust_prior_completion_rate",
+      "cust_is_first_ride",
+      "drv_prior_rides",
+      "drv_prior_cancelled",
+      "drv_prior_incomplete",
+      "drv_prior_cancel_rate",
+      "drv_prior_incomplete_rate",
+      "drv_prior_completion_rate",
+      "drv_is_first_ride",
+      "city",
+      "vehicle_type",
+      "traffic_level",
+      "weather_condition",
+      "day_of_week",
+      "time_of_day_band",
+      "distance_band",
+      "surge_bucket",
+      "season",
+      "zone_demand_level",
+      "customer_gender",
+      "preferred_vehicle_type",
+      "customer_tenure_bucket"
+    ],
+    "dataset_summary": {
+      "rows": 100000,
+      "n_features": 59,
+      "n_numeric": 46,
+      "n_categorical": 13,
+      "target": "booking_value",
+      "target_mean": 336.34,
+      "target_std": 208.02
+    },
+    "leaderboard": [
+      {
+        "model": "hist_gb",
+        "rmse": 12.1527,
+        "mae": 8.9824,
+        "r2": 0.9966,
+        "mape_pct": 2.76,
+        "rmse_pct_of_mean": 3.592,
+        "within_10_pct": 0.9982,
+        "within_20_pct": 1.0,
+        "fit_seconds": 1.72
+      },
+      {
+        "model": "random_forest",
+        "rmse": 12.0559,
+        "mae": 8.7667,
+        "r2": 0.9966,
+        "mape_pct": 2.601,
+        "rmse_pct_of_mean": 3.563,
+        "within_10_pct": 1.0,
+        "within_20_pct": 1.0,
+        "fit_seconds": 22.88
+      },
+      {
+        "model": "ridge",
+        "rmse": 59.006,
+        "mae": 44.0672,
+        "r2": 0.9196,
+        "mape_pct": 22.835,
+        "rmse_pct_of_mean": 17.439,
+        "within_10_pct": 0.4551,
+        "within_20_pct": 0.7122,
+        "fit_seconds": 0.88
+      },
+      {
+        "model": "dummy",
+        "rmse": 208.0881,
+        "mae": 164.5527,
+        "r2": -0.0001,
+        "mape_pct": 81.143,
+        "rmse_pct_of_mean": 61.498,
+        "within_10_pct": 0.1198,
+        "within_20_pct": 0.2381,
+        "fit_seconds": 0.76
+      }
+    ],
+    "baseline": [
+      {
+        "model": "dummy",
+        "rmse": 208.0881,
+        "mae": 164.5527,
+        "r2": -0.0001,
+        "mape_pct": 81.143,
+        "rmse_pct_of_mean": 61.498,
+        "within_10_pct": 0.1198,
+        "within_20_pct": 0.2381,
+        "fit_seconds": 0.76
+      }
+    ],
+    "cross_validation": {
+      "metric": "rmse",
+      "mean": 12.1601,
+      "std": 0.1166,
+      "folds": [
+        11.9735,
+        12.2968,
+        12.1875,
+        12.2533,
+        12.0892
+      ]
+    },
+    "tuning": {},
+    "top_features": [
+      {
+        "feature": "vehicle_type",
+        "importance": 0.858248,
+        "std": 0.009101
+      },
+      {
+        "feature": "ride_distance_km",
+        "importance": 0.645425,
+        "std": 0.006237
+      },
+      {
+        "feature": "surge_multiplier",
+        "importance": 0.213629,
+        "std": 0.003214
+      },
+      {
+        "feature": "estimated_ride_time_min",
+        "importance": 0.062975,
+        "std": 0.001006
+      },
+      {
+        "feature": "weather_condition",
+        "importance": 0.0014,
+        "std": 2.4e-05
+      },
+      {
+        "feature": "rush_hour_flag",
+        "importance": 0.001182,
+        "std": 3.6e-05
+      },
+      {
+        "feature": "bad_weather_flag",
+        "importance": 0.000718,
+        "std": 1.2e-05
+      },
+      {
+        "feature": "surge_bucket",
+        "importance": 0.000454,
+        "std": 2.5e-05
+      },
+      {
+        "feature": "expected_speed_kmph",
+        "importance": 5.6e-05,
+        "std": 2e-06
+      },
+      {
+        "feature": "surge_vs_zone_ratio",
+        "importance": 3e-06,
+        "std": 1e-06
+      },
+      {
+        "feature": "hour_of_day",
+        "importance": 3e-06,
+        "std": 1e-06
+      },
+      {
+        "feature": "customer_age",
+        "importance": 3e-06,
+        "std": 1e-06
+      },
+      {
+        "feature": "drv_prior_completion_rate",
+        "importance": 2e-06,
+        "std": 1e-06
+      },
+      {
+        "feature": "zone_avg_surge",
+        "importance": 2e-06,
+        "std": 1e-06
+      },
+      {
+        "feature": "distance_band",
+        "importance": 2e-06,
+        "std": 1e-06
+      }
+    ],
+    "balanced": false
+  },
+  "ride_outcome": {
+    "metrics": {
+      "accuracy": 0.6723,
+      "balanced_accuracy": 0.6185,
+      "f1_macro": 0.5652,
+      "f1_weighted": 0.6969,
+      "precision_macro": 0.5522,
+      "recall_macro": 0.6185,
+      "roc_auc_ovr": 0.8193
+    },
+    "algorithm": "hist_gb",
+    "task": "classification",
+    "target": "outcome",
+    "description": "Ride outcome (3-class): Completed / Cancelled / Incomplete",
+    "n_train": 80000,
+    "n_test": 20000,
+    "features": [
+      "ride_distance_km",
+      "estimated_ride_time_min",
+      "surge_multiplier",
+      "hour_of_day",
+      "day_of_month",
+      "month",
+      "week_of_year",
+      "is_weekend",
+      "rush_hour_flag",
+      "is_night_ride",
+      "long_distance_flag",
+      "is_same_zone",
+      "expected_speed_kmph",
+      "adverse_conditions_flag",
+      "bad_weather_flag",
+      "high_traffic_flag",
+      "peak_time_flag",
+      "zone_total_requests",
+      "zone_avg_wait_min",
+      "zone_avg_surge",
+      "surge_vs_zone_ratio",
+      "zone_demand_pressure",
+      "customer_age",
+      "customer_signup_days_ago",
+      "avg_customer_rating",
+      "customer_loyalty_score",
+      "driver_age",
+      "driver_experience_years",
+      "acceptance_rate",
+      "avg_driver_rating",
+      "avg_pickup_delay_min",
+      "driver_reliability_score",
+      "cust_prior_rides",
+      "cust_prior_cancelled",
+      "cust_prior_incomplete",
+      "cust_prior_cancel_rate",
+      "cust_prior_incomplete_rate",
+      "cust_prior_completion_rate",
+      "cust_is_first_ride",
+      "drv_prior_rides",
+      "drv_prior_cancelled",
+      "drv_prior_incomplete",
+      "drv_prior_cancel_rate",
+      "drv_prior_incomplete_rate",
+      "drv_prior_completion_rate",
+      "drv_is_first_ride",
+      "base_fare",
+      "booking_value",
+      "fare_per_km",
+      "fare_per_min",
+      "city",
+      "vehicle_type",
+      "traffic_level",
+      "weather_condition",
+      "day_of_week",
+      "time_of_day_band",
+      "distance_band",
+      "surge_bucket",
+      "season",
+      "zone_demand_level",
+      "customer_gender",
+      "preferred_vehicle_type",
+      "customer_tenure_bucket"
+    ],
+    "dataset_summary": {
+      "rows": 100000,
+      "n_features": 63,
+      "n_numeric": 50,
+      "n_categorical": 13,
+      "target": "booking_status",
+      "class_balance": {
+        "Completed": 0.6835,
+        "Cancelled": 0.2328,
+        "Incomplete": 0.0837
+      }
+    },
+    "leaderboard": [
+      {
+        "model": "hist_gb",
+        "accuracy": 0.6723,
+        "balanced_accuracy": 0.6185,
+        "f1_macro": 0.5652,
+        "f1_weighted": 0.6969,
+        "precision_macro": 0.5522,
+        "recall_macro": 0.6185,
+        "roc_auc_ovr": 0.8193,
+        "fit_seconds": 7.46
+      },
+      {
+        "model": "logreg",
+        "accuracy": 0.6406,
+        "balanced_accuracy": 0.6061,
+        "f1_macro": 0.5418,
+        "f1_weighted": 0.6732,
+        "precision_macro": 0.5375,
+        "recall_macro": 0.6061,
+        "roc_auc_ovr": 0.7968,
+        "fit_seconds": 2.19
+      },
+      {
+        "model": "random_forest",
+        "accuracy": 0.6602,
+        "balanced_accuracy": 0.5432,
+        "f1_macro": 0.5218,
+        "f1_weighted": 0.6731,
+        "precision_macro": 0.5167,
+        "recall_macro": 0.5432,
+        "roc_auc_ovr": 0.755,
+        "fit_seconds": 6.45
+      },
+      {
+        "model": "dummy",
+        "accuracy": 0.6835,
+        "balanced_accuracy": 0.3333,
+        "f1_macro": 0.2707,
+        "f1_weighted": 0.5549,
+        "precision_macro": 0.2278,
+        "recall_macro": 0.3333,
+        "roc_auc_ovr": 0.5,
+        "fit_seconds": 1.06
+      }
+    ],
+    "baseline": [
+      {
+        "model": "dummy",
+        "accuracy": 0.6835,
+        "balanced_accuracy": 0.3333,
+        "f1_macro": 0.2707,
+        "f1_weighted": 0.5549,
+        "precision_macro": 0.2278,
+        "recall_macro": 0.3333,
+        "roc_auc_ovr": 0.5,
+        "fit_seconds": 1.06
+      }
+    ],
+    "cross_validation": {
+      "metric": "f1_macro",
+      "mean": 0.5416,
+      "std": 0.004,
+      "folds": [
+        0.545,
+        0.5367,
+        0.5425,
+        0.5372,
+        0.5466
+      ]
+    },
+    "tuning": {},
+    "top_features": [
+      {
+        "feature": "customer_loyalty_score",
+        "importance": 0.116665,
+        "std": 0.003344
+      },
+      {
+        "feature": "acceptance_rate",
+        "importance": 0.108861,
+        "std": 0.003894
+      },
+      {
+        "feature": "cust_prior_completion_rate",
+        "importance": 0.058584,
+        "std": 0.002998
+      },
+      {
+        "feature": "drv_prior_cancel_rate",
+        "importance": 0.049755,
+        "std": 0.002923
+      },
+      {
+        "feature": "cust_prior_rides",
+        "importance": 0.042386,
+        "std": 0.000501
+      },
+      {
+        "feature": "driver_reliability_score",
+        "importance": 0.026978,
+        "std": 0.002426
+      },
+      {
+        "feature": "avg_customer_rating",
+        "importance": 0.021198,
+        "std": 0.001563
+      },
+      {
+        "feature": "expected_speed_kmph",
+        "importance": 0.017334,
+        "std": 0.003374
+      },
+      {
+        "feature": "avg_pickup_delay_min",
+        "importance": 0.015444,
+        "std": 0.002503
+      },
+      {
+        "feature": "surge_multiplier",
+        "importance": 0.015227,
+        "std": 0.002108
+      },
+      {
+        "feature": "avg_driver_rating",
+        "importance": 0.010308,
+        "std": 0.001133
+      },
+      {
+        "feature": "drv_prior_incomplete_rate",
+        "importance": 0.007203,
+        "std": 0.00142
+      },
+      {
+        "feature": "month",
+        "importance": 0.006923,
+        "std": 0.000682
+      },
+      {
+        "feature": "drv_prior_cancelled",
+        "importance": 0.006605,
+        "std": 0.001706
+      },
+      {
+        "feature": "high_traffic_flag",
+        "importance": 0.003803,
+        "std": 0.002363
+      }
+    ],
+    "balanced": true
+  },
+  "customer_cancellation_risk": {
+    "metrics": {
+      "accuracy": 0.7601,
+      "balanced_accuracy": 0.7693,
+      "f1_macro": 0.7161,
+      "f1_weighted": 0.7759,
+      "precision_macro": 0.7057,
+      "recall_macro": 0.7693,
+      "roc_auc": 0.8512,
+      "pr_auc": 0.6422,
+      "positive_rate": 0.2329
+    },
+    "algorithm": "hist_gb",
+    "task": "classification",
+    "target": "customer_risk",
+    "description": "Customer cancellation risk (binary)",
+    "n_train": 80000,
+    "n_test": 20000,
+    "features": [
+      "ride_distance_km",
+      "estimated_ride_time_min",
+      "surge_multiplier",
+      "hour_of_day",
+      "day_of_month",
+      "month",
+      "week_of_year",
+      "is_weekend",
+      "rush_hour_flag",
+      "is_night_ride",
+      "long_distance_flag",
+      "is_same_zone",
+      "expected_speed_kmph",
+      "adverse_conditions_flag",
+      "bad_weather_flag",
+      "high_traffic_flag",
+      "peak_time_flag",
+      "zone_total_requests",
+      "zone_avg_wait_min",
+      "zone_avg_surge",
+      "surge_vs_zone_ratio",
+      "zone_demand_pressure",
+      "customer_age",
+      "customer_signup_days_ago",
+      "avg_customer_rating",
+      "customer_loyalty_score",
+      "driver_age",
+      "driver_experience_years",
+      "acceptance_rate",
+      "avg_driver_rating",
+      "avg_pickup_delay_min",
+      "driver_reliability_score",
+      "cust_prior_rides",
+      "cust_prior_cancelled",
+      "cust_prior_incomplete",
+      "cust_prior_cancel_rate",
+      "cust_prior_incomplete_rate",
+      "cust_prior_completion_rate",
+      "cust_is_first_ride",
+      "drv_prior_rides",
+      "drv_prior_cancelled",
+      "drv_prior_incomplete",
+      "drv_prior_cancel_rate",
+      "drv_prior_incomplete_rate",
+      "drv_prior_completion_rate",
+      "drv_is_first_ride",
+      "base_fare",
+      "booking_value",
+      "fare_per_km",
+      "fare_per_min",
+      "city",
+      "vehicle_type",
+      "traffic_level",
+      "weather_condition",
+      "day_of_week",
+      "time_of_day_band",
+      "distance_band",
+      "surge_bucket",
+      "season",
+      "zone_demand_level",
+      "customer_gender",
+      "preferred_vehicle_type",
+      "customer_tenure_bucket"
+    ],
+    "dataset_summary": {
+      "rows": 100000,
+      "n_features": 63,
+      "n_numeric": 50,
+      "n_categorical": 13,
+      "target": "is_cancelled",
+      "class_balance": {
+        "0": 0.7672,
+        "1": 0.2328
+      }
+    },
+    "leaderboard": [
+      {
+        "model": "hist_gb",
+        "accuracy": 0.7601,
+        "balanced_accuracy": 0.7693,
+        "f1_macro": 0.7161,
+        "f1_weighted": 0.7759,
+        "precision_macro": 0.7057,
+        "recall_macro": 0.7693,
+        "roc_auc": 0.8512,
+        "pr_auc": 0.6422,
+        "positive_rate": 0.2329,
+        "fit_seconds": 4.02
+      },
+      {
+        "model": "logreg",
+        "accuracy": 0.7449,
+        "balanced_accuracy": 0.7501,
+        "f1_macro": 0.6988,
+        "f1_weighted": 0.7618,
+        "precision_macro": 0.6904,
+        "recall_macro": 0.7501,
+        "roc_auc": 0.8234,
+        "pr_auc": 0.571,
+        "positive_rate": 0.2329,
+        "fit_seconds": 1.4
+      },
+      {
+        "model": "random_forest",
+        "accuracy": 0.7553,
+        "balanced_accuracy": 0.7154,
+        "f1_macro": 0.6907,
+        "f1_weighted": 0.7662,
+        "precision_macro": 0.6798,
+        "recall_macro": 0.7154,
+        "roc_auc": 0.7968,
+        "pr_auc": 0.5368,
+        "positive_rate": 0.2329,
+        "fit_seconds": 6.4
+      },
+      {
+        "model": "dummy",
+        "accuracy": 0.7671,
+        "balanced_accuracy": 0.5,
+        "f1_macro": 0.4341,
+        "f1_weighted": 0.6661,
+        "precision_macro": 0.3836,
+        "recall_macro": 0.5,
+        "roc_auc": 0.5,
+        "pr_auc": 0.2329,
+        "positive_rate": 0.2329,
+        "fit_seconds": 0.87
+      }
+    ],
+    "baseline": [
+      {
+        "model": "dummy",
+        "accuracy": 0.7671,
+        "balanced_accuracy": 0.5,
+        "f1_macro": 0.4341,
+        "f1_weighted": 0.6661,
+        "precision_macro": 0.3836,
+        "recall_macro": 0.5,
+        "roc_auc": 0.5,
+        "pr_auc": 0.2329,
+        "positive_rate": 0.2329,
+        "fit_seconds": 0.87
+      }
+    ],
+    "cross_validation": {
+      "metric": "f1_macro",
+      "mean": 0.7057,
+      "std": 0.0014,
+      "folds": [
+        0.7072,
+        0.7065,
+        0.7045,
+        0.7065,
+        0.7036
+      ]
+    },
+    "tuning": {},
+    "top_features": [
+      {
+        "feature": "acceptance_rate",
+        "importance": 0.123087,
+        "std": 0.003695
+      },
+      {
+        "feature": "customer_loyalty_score",
+        "importance": 0.094133,
+        "std": 0.002742
+      },
+      {
+        "feature": "drv_prior_cancel_rate",
+        "importance": 0.060909,
+        "std": 0.00256
+      },
+      {
+        "feature": "surge_multiplier",
+        "importance": 0.043077,
+        "std": 0.003911
+      },
+      {
+        "feature": "cust_prior_rides",
+        "importance": 0.034266,
+        "std": 0.002337
+      },
+      {
+        "feature": "cust_prior_completion_rate",
+        "importance": 0.033738,
+        "std": 0.002384
+      },
+      {
+        "feature": "avg_customer_rating",
+        "importance": 0.012374,
+        "std": 0.00191
+      },
+      {
+        "feature": "drv_prior_cancelled",
+        "importance": 0.008278,
+        "std": 0.000536
+      },
+      {
+        "feature": "month",
+        "importance": 0.005735,
+        "std": 0.00099
+      },
+      {
+        "feature": "bad_weather_flag",
+        "importance": 0.002987,
+        "std": 0.000432
+      },
+      {
+        "feature": "drv_prior_rides",
+        "importance": 0.002541,
+        "std": 0.000768
+      },
+      {
+        "feature": "week_of_year",
+        "importance": 0.001648,
+        "std": 0.000501
+      },
+      {
+        "feature": "rush_hour_flag",
+        "importance": 0.001309,
+        "std": 0.000918
+      },
+      {
+        "feature": "base_fare",
+        "importance": 0.000908,
+        "std": 0.000431
+      },
+      {
+        "feature": "cust_prior_cancel_rate",
+        "importance": 0.0009,
+        "std": 0.000712
+      }
+    ],
+    "balanced": true
+  },
+  "driver_delay_risk": {
+    "metrics": {
+      "accuracy": 0.8873,
+      "balanced_accuracy": 0.6052,
+      "f1_macro": 0.6112,
+      "f1_weighted": 0.884,
+      "precision_macro": 0.6185,
+      "recall_macro": 0.6052,
+      "roc_auc": 0.7235,
+      "pr_auc": 0.236,
+      "positive_rate": 0.0837
+    },
+    "algorithm": "random_forest",
+    "task": "classification",
+    "target": "driver_risk",
+    "description": "Driver delay / incomplete-ride risk (binary)",
+    "n_train": 80000,
+    "n_test": 20000,
+    "features": [
+      "ride_distance_km",
+      "estimated_ride_time_min",
+      "surge_multiplier",
+      "hour_of_day",
+      "day_of_month",
+      "month",
+      "week_of_year",
+      "is_weekend",
+      "rush_hour_flag",
+      "is_night_ride",
+      "long_distance_flag",
+      "is_same_zone",
+      "expected_speed_kmph",
+      "adverse_conditions_flag",
+      "bad_weather_flag",
+      "high_traffic_flag",
+      "peak_time_flag",
+      "zone_total_requests",
+      "zone_avg_wait_min",
+      "zone_avg_surge",
+      "surge_vs_zone_ratio",
+      "zone_demand_pressure",
+      "customer_age",
+      "customer_signup_days_ago",
+      "avg_customer_rating",
+      "customer_loyalty_score",
+      "driver_age",
+      "driver_experience_years",
+      "acceptance_rate",
+      "avg_driver_rating",
+      "avg_pickup_delay_min",
+      "driver_reliability_score",
+      "cust_prior_rides",
+      "cust_prior_cancelled",
+      "cust_prior_incomplete",
+      "cust_prior_cancel_rate",
+      "cust_prior_incomplete_rate",
+      "cust_prior_completion_rate",
+      "cust_is_first_ride",
+      "drv_prior_rides",
+      "drv_prior_cancelled",
+      "drv_prior_incomplete",
+      "drv_prior_cancel_rate",
+      "drv_prior_incomplete_rate",
+      "drv_prior_completion_rate",
+      "drv_is_first_ride",
+      "base_fare",
+      "booking_value",
+      "fare_per_km",
+      "fare_per_min",
+      "city",
+      "vehicle_type",
+      "traffic_level",
+      "weather_condition",
+      "day_of_week",
+      "time_of_day_band",
+      "distance_band",
+      "surge_bucket",
+      "season",
+      "zone_demand_level",
+      "customer_gender",
+      "preferred_vehicle_type",
+      "customer_tenure_bucket"
+    ],
+    "dataset_summary": {
+      "rows": 100000,
+      "n_features": 63,
+      "n_numeric": 50,
+      "n_categorical": 13,
+      "target": "is_incomplete",
+      "class_balance": {
+        "0": 0.9163,
+        "1": 0.0837
+      }
+    },
+    "leaderboard": [
+      {
+        "model": "random_forest",
+        "accuracy": 0.8873,
+        "balanced_accuracy": 0.6052,
+        "f1_macro": 0.6112,
+        "f1_weighted": 0.884,
+        "precision_macro": 0.6185,
+        "recall_macro": 0.6052,
+        "roc_auc": 0.7235,
+        "pr_auc": 0.236,
+        "positive_rate": 0.0837,
+        "fit_seconds": 5.72
+      },
+      {
+        "model": "hist_gb",
+        "accuracy": 0.7559,
+        "balanced_accuracy": 0.695,
+        "f1_macro": 0.5756,
+        "f1_weighted": 0.8059,
+        "precision_macro": 0.5769,
+        "recall_macro": 0.695,
+        "roc_auc": 0.7631,
+        "pr_auc": 0.2836,
+        "positive_rate": 0.0837,
+        "fit_seconds": 3.97
+      },
+      {
+        "model": "logreg",
+        "accuracy": 0.7064,
+        "balanced_accuracy": 0.6984,
+        "f1_macro": 0.5487,
+        "f1_weighted": 0.7708,
+        "precision_macro": 0.5693,
+        "recall_macro": 0.6984,
+        "roc_auc": 0.7667,
+        "pr_auc": 0.2678,
+        "positive_rate": 0.0837,
+        "fit_seconds": 1.47
+      },
+      {
+        "model": "dummy",
+        "accuracy": 0.9163,
+        "balanced_accuracy": 0.5,
+        "f1_macro": 0.4782,
+        "f1_weighted": 0.8763,
+        "precision_macro": 0.4582,
+        "recall_macro": 0.5,
+        "roc_auc": 0.5,
+        "pr_auc": 0.0837,
+        "positive_rate": 0.0837,
+        "fit_seconds": 0.87
+      }
+    ],
+    "baseline": [
+      {
+        "model": "dummy",
+        "accuracy": 0.9163,
+        "balanced_accuracy": 0.5,
+        "f1_macro": 0.4782,
+        "f1_weighted": 0.8763,
+        "precision_macro": 0.4582,
+        "recall_macro": 0.5,
+        "roc_auc": 0.5,
+        "pr_auc": 0.0837,
+        "positive_rate": 0.0837,
+        "fit_seconds": 0.87
+      }
+    ],
+    "cross_validation": {
+      "metric": "f1_macro",
+      "mean": 0.5992,
+      "std": 0.0055,
+      "folds": [
+        0.595,
+        0.591,
+        0.601,
+        0.6059,
+        0.6032
+      ]
+    },
+    "tuning": {},
+    "top_features": [
+      {
+        "feature": "traffic_level",
+        "importance": 0.065896,
+        "std": 0.00571
+      },
+      {
+        "feature": "expected_speed_kmph",
+        "importance": 0.060335,
+        "std": 0.005411
+      },
+      {
+        "feature": "avg_pickup_delay_min",
+        "importance": 0.040266,
+        "std": 0.003596
+      },
+      {
+        "feature": "high_traffic_flag",
+        "importance": 0.03872,
+        "std": 0.003362
+      },
+      {
+        "feature": "customer_loyalty_score",
+        "importance": 0.035355,
+        "std": 0.004759
+      },
+      {
+        "feature": "acceptance_rate",
+        "importance": 0.021002,
+        "std": 0.005875
+      },
+      {
+        "feature": "driver_reliability_score",
+        "importance": 0.009793,
+        "std": 0.001813
+      },
+      {
+        "feature": "surge_multiplier",
+        "importance": 0.007125,
+        "std": 0.00274
+      },
+      {
+        "feature": "surge_vs_zone_ratio",
+        "importance": 0.00665,
+        "std": 0.002528
+      },
+      {
+        "feature": "surge_bucket",
+        "importance": 0.006301,
+        "std": 0.002086
+      },
+      {
+        "feature": "estimated_ride_time_min",
+        "importance": 0.005127,
+        "std": 0.001301
+      },
+      {
+        "feature": "drv_prior_completion_rate",
+        "importance": 0.0045,
+        "std": 0.002365
+      },
+      {
+        "feature": "ride_distance_km",
+        "importance": 0.003556,
+        "std": 0.001316
+      },
+      {
+        "feature": "cust_prior_completion_rate",
+        "importance": 0.003259,
+        "std": 0.001948
+      },
+      {
+        "feature": "fare_per_km",
+        "importance": 0.003118,
+        "std": 0.001539
+      }
+    ],
+    "balanced": true
+  },
+  "fare_leakage_ablation": {
+    "name": "fare_with_base_fare_ablation",
+    "metrics": {
+      "rmse": 11.8236,
+      "mae": 8.7208,
+      "r2": 0.9968,
+      "mape_pct": 2.645,
+      "rmse_pct_of_mean": 3.494,
+      "within_10_pct": 0.9986,
+      "within_20_pct": 0.9999
+    }
+  }
+}

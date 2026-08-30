@@ -1,0 +1,33 @@
+# --- Generated artefacts (regenerate with the scripts in scripts/) --------- #
+# Parquet feature cache: rebuild with `python scripts/train_all.py --rebuild-features`
+data/
+
+# Trained model binaries: rebuild with `python scripts/train_all.py`.
+# driver_delay_risk.joblib alone is 47 MB, so the artefacts stay out of git —
+# but the metrics they produced are kept so results are reviewable without a retrain.
+models/*
+!models/metrics.json
+
+# --- Secrets -------------------------------------------------------------- #
+.env
+.streamlit/secrets.toml
+
+# --- Python --------------------------------------------------------------- #
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# --- Redundant source copies ---------------------------------------------- #
+# The loaders read the CSVs; the Excel files are duplicates of the same data.
+Rapido_dataset/*.xlsx
+
+# --- OS / editor ---------------------------------------------------------- #
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+.claude/
