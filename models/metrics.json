@@ -1,5 +1,5 @@
 {
-  "fare_prediction": {
+  "fare_prediction_model": {
     "metrics": {
       "rmse": 12.1527,
       "mae": 8.9824,
@@ -234,9 +234,10 @@
         "std": 1e-06
       }
     ],
-    "balanced": false
+    "balanced": false,
+    "model_name": "fare_prediction_model"
   },
-  "ride_outcome": {
+  "ride_outcome_model": {
     "metrics": {
       "accuracy": 0.6723,
       "balanced_accuracy": 0.6185,
@@ -478,9 +479,10 @@
         "std": 0.002363
       }
     ],
-    "balanced": true
+    "balanced": true,
+    "model_name": "ride_outcome_model"
   },
-  "customer_cancellation_risk": {
+  "customer_cancellation_model": {
     "metrics": {
       "accuracy": 0.7601,
       "balanced_accuracy": 0.7693,
@@ -733,9 +735,10 @@
         "std": 0.000712
       }
     ],
-    "balanced": true
+    "balanced": true,
+    "model_name": "customer_cancellation_model"
   },
-  "driver_delay_risk": {
+  "driver_delay_model": {
     "metrics": {
       "accuracy": 0.8873,
       "balanced_accuracy": 0.6052,
@@ -988,7 +991,8 @@
         "std": 0.001539
       }
     ],
-    "balanced": true
+    "balanced": true,
+    "model_name": "driver_delay_model"
   },
   "fare_leakage_ablation": {
     "name": "fare_with_base_fare_ablation",

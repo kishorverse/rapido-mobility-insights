@@ -1,18 +1,20 @@
-# --- Generated artefacts (regenerate with the scripts in scripts/) --------- #
-# Parquet feature cache: rebuild with `python scripts/train_all.py --rebuild-features`
-data/
+# --- Generated artefacts (regenerate with the scripts in src/) ------------- #
+# The model-ready feature table is ~52 MB and derived entirely from data/raw/.
+# Rebuild with: python src/feature_engineering.py build --rebuild
+data/processed/*.csv
 
-# Trained model binaries: rebuild with `python scripts/train_all.py`.
-# driver_delay_risk.joblib alone is 47 MB, so the artefacts stay out of git —
-# but the metrics they produced are kept so results are reviewable without a retrain.
+# Trained model binaries: rebuild with `python src/train_models.py`.
+# driver_delay_model.pkl alone is 47 MB, so the artefacts stay out of git --
+# but the metrics they produced are kept so results are reviewable without a
+# retrain, and reports/model_results.md is written from them.
 models/*
 !models/metrics.json
 
-# --- Secrets -------------------------------------------------------------- #
+# --- Secrets --------------------------------------------------------------- #
 .env
 .streamlit/secrets.toml
 
-# --- Python --------------------------------------------------------------- #
+# --- Python ---------------------------------------------------------------- #
 __pycache__/
 *.py[cod]
 *.egg-info/
@@ -21,11 +23,11 @@ venv/
 .pytest_cache/
 .ipynb_checkpoints/
 
-# --- Redundant source copies ---------------------------------------------- #
-# The loaders read the CSVs; the Excel files are duplicates of the same data.
-Rapido_dataset/*.xlsx
+# --- Redundant source copies ----------------------------------------------- #
+# The loaders read data/raw/*.csv; any Excel copies are the same data again.
+*.xlsx
 
-# --- OS / editor ---------------------------------------------------------- #
+# --- OS / editor ----------------------------------------------------------- #
 .DS_Store
 Thumbs.db
 .vscode/

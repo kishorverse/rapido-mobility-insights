@@ -23,7 +23,7 @@ Streamlit dashboard.
 9. [Machine Learning Models](#9-machine-learning-models)
 10. [Leakage Controls](#10-leakage-controls)
 11. [Dashboard Walkthrough](#11-dashboard-walkthrough)
-12. [Testing](#12-testing)
+12. [Reproducibility](#12-reproducibility)
 13. [Business Recommendations](#13-business-recommendations)
 14. [Documented Deviations](#14-documented-deviations)
 15. [Project Structure](#15-project-structure)
@@ -55,27 +55,25 @@ pip install -r requirements.txt
 # 2. Configure database credentials
 cp .env.example .env        # then edit .env with your MySQL password
 
-# 3. Profile the raw data  ->  docs/data_quality_report.md
-python scripts/reports.py quality
+# 3. Build the model-ready table  ->  data/processed/model_data.csv
+python src/feature_engineering.py build
 
 # 4. Build the warehouse (creates schema, loads 141,959 rows, builds indexes)
-python scripts/manage.py etl --rebuild
+python src/data_preprocessing.py etl --rebuild
 
-# 5. Train the four models  ->  models/*.joblib
-python scripts/manage.py train
+# 5. Train the four models  ->  models/*.pkl
+python src/train_models.py
 
-# 6. Generate the findings report  ->  docs/INSIGHTS.md
-python scripts/reports.py insights
-
-# 7. Launch the dashboard
-streamlit run app.py
+# 6. Launch the dashboard
+streamlit run app/streamlit_app.py
 ```
 
 The dashboard opens at <http://localhost:8501>.
 
 ### Configuration
 
-All settings live in `config.py` and are overridable through environment variables
+All settings live in the configuration section at the top of
+`src/data_preprocessing.py` and are overridable through environment variables
 (loaded from `.env`):
 
 | Variable | Default | Purpose |
@@ -91,11 +89,13 @@ All settings live in `config.py` and are overridable through environment variabl
 ### Other commands
 
 ```bash
-python scripts/manage.py etl --verify-only        # connectivity + row counts
-python scripts/manage.py train --model fare --tune # retrain one model with search
-python scripts/manage.py train --tune --search grid  # exhaustive GridSearchCV sweep
-python scripts/build_notebook.py --execute      # regenerate the EDA notebook
-pytest tests -q                                 # run the test suite
+python src/data_preprocessing.py etl --verify-only    # connectivity + row counts
+python src/data_preprocessing.py clean                # clean only, report changes
+python src/feature_engineering.py build --rebuild     # force-rebuild model_data.csv
+python src/feature_engineering.py tests               # significance tests
+python src/train_models.py --model fare --tune        # retrain one model with search
+python src/train_models.py --tune --search grid       # exhaustive GridSearchCV sweep
+python src/predict.py --distance 12 --vehicle Cab --surge 1.8 --traffic High
 ```
 
 ---
@@ -103,35 +103,49 @@ pytest tests -q                                 # run the test suite
 ## 3. Architecture
 
 ```
-Rapido_dataset/*.csv
+data/raw/*.csv
         │
         ▼
-   rapido/io.py ──────────► scripts/reports.py quality ──► docs/data_quality_report.md
-        │
-        ▼
-   rapido/cleaning.py          (validate, parse, preserve structural nulls)
-        │
-        ├──────────────► rapido/features.py ──► data/processed/features.parquet
-        │                                              │
-        ▼                                              ▼
-   rapido/etl.py                              rapido/models/
-        │                                     ├── dataset.py   (matrices + leakage guard)
-        ▼                                     ├── train.py     (pipeline, fit, tune)
-   MySQL: rapido_mobility                     ├── evaluate.py  (metrics + importance)
-   (8 tables, 3NF, 7 indexes)                 └── serve.py     (persist + predict)
-        │
-        ▼
-   rapido/queries.py  (30 named queries)
-        │                                              │
-        └──────────────┬───────────────────────────────┘
+  src/data_preprocessing.py
+   ├── loading      (declared dtypes, one reader)
+   ├── cleaning     (validate, parse, preserve structural nulls)
+   ├── database     (DDL read from sql/schema.sql, MySQL access layer)
+   └── ETL          (surrogate keys, load, verify)
+        │                              │
+        │                              ▼
+        │                    MySQL: rapido_mobility
+        │                    (8 tables, 3NF, 7 indexes)
+        │                              │
+        ▼                              ▼
+  src/feature_engineering.py    src/feature_engineering.py
+   ├── features ──► data/         └── queries  (25 named parameterised queries,
+   │                processed/                  mirrored in sql/analysis_queries.sql)
+   │                model_data.csv              │
+   └── statistics  (significance tests)         │
+        │                                       │
+        ▼                                       │
+  src/train_models.py                           │
+   ├── datasets    (matrices + leakage guard)   │
+   ├── training    (pipeline, fit, tune)        │
+   ├── evaluation  (metrics + importance)       │
+   └── persistence ──► models/*.pkl             │
+        │                                       │
+        ▼                                       │
+  src/predict.py   (serve a scored booking)     │
+        │                                       │
+        └──────────────┬────────────────────────┘
                        ▼
-              app.py + app_pages/   (9-page Streamlit dashboard)
+            app/streamlit_app.py   (9-page Streamlit dashboard)
 ```
 
-**Design rule:** all business logic lives in the `rapido/` package. The Streamlit pages
-under `app_pages/` only orchestrate and render — they contain no queries, no feature
-maths, and no model code. This keeps every capability testable and reusable outside the
-dashboard.
+**Design rule:** all business logic lives in `src/`. `app/streamlit_app.py` only
+orchestrates and renders — it contains no queries, no feature maths and no model code, so
+every capability stays reusable outside the dashboard. The four `src/` modules are
+strictly layered and import in one direction only:
+`data_preprocessing → feature_engineering → train_models → predict`.
+
+`sql/schema.sql` is the single source of truth for the database: `data_preprocessing.py`
+reads and executes it directly rather than holding a second copy of the DDL.
 
 ---
 
@@ -154,7 +168,7 @@ Incomplete 8,370 (8.4%)
 
 ## 5. Data Cleaning
 
-Handled in `rapido/cleaning.py`:
+Handled in the cleaning section of `src/data_preprocessing.py`:
 
 - **Column standardisation** to snake_case, whitespace stripped
 - **Datetime parsing** — `booking_date` + `booking_time` collapse into one `booking_ts`
@@ -177,7 +191,7 @@ The only nulls in the dataset are **structural**:
 
 These are **not imputed**. Filling them would fabricate the very signal the models are
 meant to predict. `handle_missing_bookings()` explicitly skips
-`config.POST_OUTCOME_COLUMNS`, and both columns are blocked from every feature matrix.
+`POST_OUTCOME_COLUMNS`, and both columns are blocked from every feature matrix.
 
 Result: 0 rows lost, 0 non-structural nulls, all range checks PASS.
 
@@ -227,8 +241,7 @@ Load: **141,959 rows across 8 tables in ~22 seconds**, every table verified PASS
 
 ## 7. Exploratory Findings
 
-Full report: [`docs/INSIGHTS.md`](docs/INSIGHTS.md) · Notebook:
-[`notebooks/01_eda.ipynb`](notebooks/01_eda.ipynb)
+Notebook: [`notebooks/01_data_cleaning_eda.ipynb`](notebooks/01_data_cleaning_eda.ipynb)
 
 ### Traffic and weather drive cancellations — geography does not
 
@@ -324,8 +337,8 @@ the row being predicted — they are replaced, not used.
 
 **The proof:** `cust_prior_cancel_rate` has exactly **10,000 nulls** — one per
 customer's first-ever ride — and `drv_prior_cancel_rate` exactly **5,000**. If the
-current row were leaking in, those counts would be zero. Locked in by
-`tests/test_data.py`.
+current row were leaking in, those counts would be zero. Verified row by row in
+[`notebooks/02_feature_engineering.ipynb`](notebooks/02_feature_engineering.ipynb).
 
 ---
 
@@ -378,8 +391,8 @@ identified, controlled, and covered by a test.
 | 2 | `base_fare` | `booking_value / (base_fare × surge)` ∈ [0.950, 1.050], sd 0.029 | blocked from the fare model |
 | 3 | `cancellation_rate`, `delay_rate`, and the `*_flag` columns | whole-period aggregates including the predicted row; the flags are those rates thresholded at exactly 0.20 and 0.10 | replaced with prior-history features |
 
-`rapido/models/dataset.py::assert_no_leakage()` **raises** rather than warns, and
-`tests/test_dataset.py` fails if any blocked column reappears.
+`src/train_models.py::assert_no_leakage()` **raises** rather than warns, so a blocked
+column cannot silently reach a fit.
 
 ### The fare model is at its noise floor, not overfitting
 
@@ -405,7 +418,7 @@ confirming the tariff is already recoverable from distance and vehicle type.
 
 ## 11. Dashboard Walkthrough
 
-`streamlit run app.py` — nine pages under two sections.
+`streamlit run app/streamlit_app.py` — nine pages under two sections.
 
 **Analytics**
 | Page | Contents |
@@ -430,22 +443,31 @@ the explorer pages in SQL rather than loading the full table.
 
 ---
 
-## 12. Testing
+## 12. Reproducibility
+
+Every number in this README, in `reports/model_results.md` and in the dashboard is
+regenerable from `data/raw/` with four commands:
 
 ```bash
-pytest tests -q
+python src/feature_engineering.py build --rebuild   # data/processed/model_data.csv
+python src/data_preprocessing.py etl --rebuild      # MySQL, from sql/schema.sql
+python src/train_models.py                          # models/*.pkl + metrics.json
+python src/feature_engineering.py tests             # the significance tests
 ```
 
-**145 tests, all passing.**
+The three notebooks are committed **with their outputs**, so the analysis is readable
+without running anything. Each one re-derives its results from the same `src/` functions
+the dashboard and models use, rather than restating them:
 
-| File | Covers |
+| Notebook | Establishes |
 |---|---|
-| `test_data.py` | the data pipeline end to end: loading and dtypes, the three leakage assumptions, datetime parsing, structural-null preservation, ranges and namespacing, engineered flags, scores, and prior-history correctness |
-| `test_dataset.py` | the leakage guard, parameterised across every blocked column × every target |
-| `test_queries.py` | all 30 queries against live MySQL, parameterisation, SQL-injection safety, pagination |
-| `test_models.py` | metric maths, artefact round-trips, baseline comparison, benchmark and noise-floor assertions, serving behaviour |
+| `01_data_cleaning_eda.ipynb` | Structural soundness, the three leakage traps, and that traffic/weather/surge drive cancellations while city and vehicle type do not |
+| `02_feature_engineering.ipynb` | The 76-column feature table, and a row-by-row proof that the prior-history window is causal |
+| `03_model_training_evaluation.ipynb` | Estimator comparison against a baseline, held-out evaluation of all four models, and the fare leakage ablation |
 
-Database-dependent tests skip automatically when MySQL is unreachable.
+Determinism: `random_state=42` throughout, a fixed 80/20 stratified split, and all
+preprocessing fitted **inside** the sklearn Pipeline so cross-validation folds never see
+test statistics.
 
 ---
 
@@ -486,40 +508,59 @@ with the nearest defensible equivalent.
 ## 15. Project Structure
 
 ```
-Project_3/
-├── app.py                      # Streamlit entry point and navigation
-├── config.py                   # paths, DB config, constants, leakage blocklists
+rapido-mobility-analytics/
+│
+├── data/
+│   ├── raw/                            # the five source CSVs
+│   │   ├── bookings.csv                #   100,000 rows - fact table
+│   │   ├── customers.csv               #    10,000 rows
+│   │   ├── drivers.csv                 #     5,000 rows
+│   │   ├── location_demand.csv         #    17,941 rows
+│   │   └── time_features.csv           #     8,760 rows
+│   │
+│   └── processed/
+│       └── model_data.csv              # 100,000 × 76 model-ready table (generated)
+│
+├── notebooks/
+│   ├── 01_data_cleaning_eda.ipynb      # profiling, cleaning, leakage traps, EDA
+│   ├── 02_feature_engineering.ipynb    # feature build + causal-window proof
+│   └── 03_model_training_evaluation.ipynb  # training, evaluation, ablation
+│
+├── src/
+│   ├── data_preprocessing.py           # config · loading · cleaning · database · ETL
+│   ├── feature_engineering.py          # features · SQL queries · significance tests
+│   ├── train_models.py                 # datasets · training · evaluation · persistence
+│   └── predict.py                      # prediction serving
+│
+├── models/                             # trained artefacts (gitignored except metrics)
+│   ├── ride_outcome_model.pkl
+│   ├── fare_prediction_model.pkl
+│   ├── customer_cancellation_model.pkl
+│   ├── driver_delay_model.pkl
+│   └── metrics.json                    # recorded metrics, leaderboards, importances
+│
+├── sql/
+│   ├── schema.sql                      # authoritative DDL - executed by src/
+│   └── analysis_queries.sql            # the analysis queries, standalone runnable
+│
+├── app/
+│   └── streamlit_app.py                # 9-page dashboard (presentation only)
+│
+├── reports/
+│   └── model_results.md                # full metrics, method and recommendations
+│
 ├── requirements.txt
-├── .env.example                # credential template (.env is gitignored)
-│
-├── rapido/                     # all business logic
-│   ├── io.py                   # loading and Parquet caching
-│   ├── cleaning.py             # validation and cleaning
-│   ├── features.py             # feature engineering
-│   ├── db.py                   # DDL, index definitions and MySQL access
-│   ├── etl.py                  # extract-transform-load pipeline
-│   ├── queries.py              # 30 named parameterised queries
-│   ├── charts.py               # Plotly figure builders
-│   ├── stats.py                # significance testing
-│   └── models/
-│       ├── dataset.py          # feature matrices + leakage guard
-│       ├── train.py            # preprocessing, estimators, fitting, tuning
-│       ├── evaluate.py         # metrics, diagnostics, feature importance
-│       └── serve.py            # artefact persistence + prediction serving
-│
-├── app_pages/                  # 9 Streamlit pages (presentation only)
-├── scripts/                    # manage (etl · train) · reports (quality · insights) · build_notebook
-├── tests/                      # 145 tests
-├── notebooks/01_eda.ipynb      # executed EDA notebook
-├── docs/
-│   ├── PROJECT_BRIEF.md        # the original project specification
-│   ├── PROJECT_PLAN.md         # build plan and function inventory
-│   ├── data_quality_report.md  # generated profiling report
-│   └── INSIGHTS.md             # generated findings report
-├── data/processed/             # Parquet caches (gitignored)
-├── models/                     # trained .joblib artefacts (gitignored)
-└── Rapido_dataset/             # source CSVs
+├── README.md
+├── PROJECT_BRIEF.md                    # the original assignment specification
+└── .gitignore
 ```
+
+`data/processed/` and the four `.pkl` files are generated and gitignored — a fresh
+clone rebuilds them with the commands in [Quick Start](#2-quick-start). `models/metrics.json`
+*is* committed, so the results in `reports/model_results.md` stay reviewable without a
+48 MB download or a retrain.
+
+Each `src/` module is a CLI as well as a library — `python src/<module>.py --help`.
 
 ---
 
